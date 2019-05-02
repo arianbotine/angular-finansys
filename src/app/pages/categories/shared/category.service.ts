@@ -28,14 +28,14 @@ getById(id: number): Observable<Category>{
   
   return this.http.get(url).pipe(
     catchError(this.handleError),
-    map(this.jsonDataToCategorie)
+    map(this.jsonDataToCategory)
   );
 }
 
 create(category: Category): Observable<Category>{
   return this.http.post(this.apiPath,category).pipe(
     catchError(this.handleError),
-    map(this.jsonDataToCategorie)
+    map(this.jsonDataToCategory)
   );
 }
 
@@ -62,7 +62,7 @@ delete(id: number): Observable<any>{
     return categories;
   }
 
-  private jsonDataToCategorie(jsonData: any): Category{
+  private jsonDataToCategory(jsonData: any): Category{
     return jsonData as Category;
   }
 
