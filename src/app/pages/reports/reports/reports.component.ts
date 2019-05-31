@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild,ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 
 import { Category } from "../../categories/shared/category.model";
 import { CategoryService } from "../../categories/shared/category.service";
@@ -6,7 +6,7 @@ import { CategoryService } from "../../categories/shared/category.service";
 import { Entry } from "../../entries/shared/entry.model";
 import { EntryService } from "../../entries/shared/entry.service";
 
-import { currencyFormatter } from "currency-formatter";
+import currencyFormatter from "currency-formatter"
 
 @Component({
   selector: 'app-reports',
@@ -23,7 +23,7 @@ export class ReportsComponent implements OnInit {
   revenueChartData: any;
 
   chartOptions = {
-    scales:{
+    scales: {
       yAxes: [{
         ticks: {
           beginAtZero: true
@@ -35,17 +35,16 @@ export class ReportsComponent implements OnInit {
   categories: Category[] = [];
   entries: Entry[] = [];
 
-  @ViewChild('month') month: ElementRef = null;
-  @ViewChild('year') year: ElementRef = null;
+  @ViewChild('month',{ read: false, static: false }) month: ElementRef = null;
+  @ViewChild('year',{ read: false, static: false }) year: ElementRef = null;
 
-  constructor(private entryService: EntryService, private categoryService: CategoryService) {
-
-   }
+  constructor(private entryService: EntryService, private categoryService: CategoryService) { }
 
   ngOnInit() {
     this.categoryService.getAll()
-    .subscribe(categories => this.categories = categories);
+      .subscribe(categories => this.categories = categories);
   }
+
 
   generateReports() {
     const month = this.month.nativeElement.value;
@@ -63,6 +62,8 @@ export class ReportsComponent implements OnInit {
     this.calculateBalance();
     this.setChartData();
   }
+
+
   private calculateBalance(){
     let expenseTotal = 0;
     let revenueTotal = 0;
