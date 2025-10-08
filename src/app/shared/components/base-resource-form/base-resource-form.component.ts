@@ -1,4 +1,9 @@
-import { OnInit, AfterContentChecked, Injector } from '@angular/core';
+import {
+  OnInit,
+  AfterContentChecked,
+  Injector,
+  Directive,
+} from "@angular/core";
 import { FormBuilder, FormGroup, Validators } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 
@@ -9,129 +14,134 @@ import { switchMap } from "rxjs/operators";
 
 import toastr from "toastr";
 
-export abstract class BaseResourceFormComponent<T extends BaseResourceModel> implements OnInit, AfterContentChecked {
+@Directive()
+export abstract class BaseResourceFormComponent<T extends BaseResourceModel>
+  implements OnInit, AfterContentChecked
+{
+  currentAction!: string;
+  resourceForm!: FormGroup;
+  pageTitle!: string;
+  serverErrorMessages: string[] | null = null;
+  submittingForm: boolean = false;
 
-    currentAction: string;
-    resourceForm: FormGroup;
-    pageTitle: string;
-    serverErrorMessages: string[] = null;
-    submittingForm: boolean = false;
-
-    protected route: ActivatedRoute;
-    protected router: Router;
-    protected formBuilder: FormBuilder;
+  protected route: ActivatedRoute;
+  protected router: Router;
+  protected formBuilder: FormBuilder;
 
   constructor(
     protected injector: Injector,
     public resource: T,
     protected resourceService: BaseResourceService<T>,
-    protected jsonDataToResourceFn: (jsonData) => T
+    protected jsonDataToResourceFn: (jsonData: any) => T
   ) {
-      this.route = this.injector.get(ActivatedRoute);
-      this.router = this.injector.get(Router);
-      this.formBuilder = this.injector.get(FormBuilder);
-   }
+    this.route = this.injector.get(ActivatedRoute);
+    this.router = this.injector.get(Router);
+    this.formBuilder = this.injector.get(FormBuilder);
+  }
 
   ngOnInit() {
     this.setCurrentAction();
     this.buildResourceForm();
     this.loadResource();
-  
   }
 
-  ngAfterContentChecked(){
+  ngAfterContentChecked() {
     this.setPageTitle();
   }
 
-  submitForm(){
+  submitForm() {
     this.submittingForm = true;
 
-    if(this.currentAction == "new"){
+    if (this.currentAction == "new") {
       this.createResource();
-    }else{
+    } else {
       this.updateResource();
     }
   }
 
-  protected setPageTitle()  {
-    if (this.currentAction == "new"){
+  protected setPageTitle() {
+    if (this.currentAction == "new") {
       this.pageTitle = this.creationPageTitle();
-    }else{
+    } else {
       //Se estiver nulo, concatena com o vazio
       this.pageTitle = this.editionPageTitle();
     }
   }
   protected editionPageTitle(): string {
     return "Edição";
-    }
+  }
   protected creationPageTitle(): string {
-        return "Novo";
-    }
+    return "Novo";
+  }
 
-  protected setCurrentAction(){
-    if(this.route.snapshot.url[0].path == "new"){
+  protected setCurrentAction() {
+    if (this.route.snapshot.url[0].path == "new") {
       this.currentAction = "new";
-    }else{
+    } else {
       this.currentAction = "edit";
     }
   }
 
-  protected loadResource(){
-    if(this.currentAction == "edit"){
-      this.route.paramMap.pipe(
-        switchMap(params => this.resourceService.getById(+params.get("id")))
-      )
-      .subscribe(
-        (resource) => {
-          this.resource = resource;
-          this.resourceForm.patchValue(resource) // binds loaded category data to resourceForm
-        },
-        (erro) => alert('Ocorreu um erro no servidor, tente mais tarde!')
-      )
+  protected loadResource() {
+    if (this.currentAction == "edit") {
+      this.route.paramMap
+        .pipe(
+          switchMap((params) =>
+            this.resourceService.getById(+(params.get("id") || 0))
+          )
+        )
+        .subscribe(
+          (resource) => {
+            this.resource = resource;
+            this.resourceForm.patchValue(resource); // binds loaded category data to resourceForm
+          },
+          (erro) => alert("Ocorreu um erro no servidor, tente mais tarde!")
+        );
     }
   }
 
-  protected createResource(){
+  protected createResource() {
     const resource: T = this.jsonDataToResourceFn(this.resourceForm.value);
 
-    this.resourceService.create(resource)
-      .subscribe(
-        resource => this.actionForSucess(resource),
-        error => this.actionForError(error)
-      );
-  }
-
-  protected updateResource(){
-    const resource: T = this.jsonDataToResourceFn(this.resourceForm.value);
-
-    this.resourceService.update(resource)
-    .subscribe(
-        resource => this.actionForSucess(resource),
-        error => this.actionForError(error)
+    this.resourceService.create(resource).subscribe(
+      (resource) => this.actionForSucess(resource),
+      (error) => this.actionForError(error)
     );
   }
 
-  protected actionForSucess(resource: T){
+  protected updateResource() {
+    const resource: T = this.jsonDataToResourceFn(this.resourceForm.value);
+
+    this.resourceService.update(resource).subscribe(
+      (resource) => this.actionForSucess(resource),
+      (error) => this.actionForError(error)
+    );
+  }
+
+  protected actionForSucess(resource: T) {
     toastr.success("Solicitação processada com sucesso!");
     const baseComponentPath: string = this.route.snapshot.url[0].path;
     // reload component page
-    this.router.navigateByUrl(baseComponentPath,{skipLocationChange: true}).then(
-      () => this.router.navigate([baseComponentPath,resource.id,"edit"])
-    );
-
+    this.router
+      .navigateByUrl(baseComponentPath, { skipLocationChange: true })
+      .then(() =>
+        this.router.navigate([baseComponentPath, resource.id, "edit"])
+      );
   }
 
-  protected actionForError(error){
+  protected actionForError(error: any) {
     toastr.error("Ocorreu um erro ao processar a sua solicitação!");
 
     this.submittingForm = false;
 
-    if(error.status === 422){
+    if (error.status === 422) {
       this.serverErrorMessages = JSON.parse(error._body).errors;
-    }else{
-      this.serverErrorMessages = ["Falha na comunicação com o servidor. Por favor, tente mais tarde."]
+    } else {
+      this.serverErrorMessages = [
+        "Falha na comunicação com o servidor. Por favor, tente mais tarde.",
+      ];
     }
   }
 
-    protected abstract buildResourceForm():void;
+  protected abstract buildResourceForm(): void;
 }
